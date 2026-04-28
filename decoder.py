@@ -13,6 +13,9 @@ FREQ_0 = 2025
 FREQ_1 = 2225
 
 def tone_power(section, freq, sample_rate):
+    """
+    Used to measure how much a section matches a frequency.
+    """
 
     indices = np.arange(len(section))
     time = indices / sample_rate
@@ -26,8 +29,9 @@ def tone_power(section, freq, sample_rate):
     return cos_align * cos_align + sin_align * sin_align
 
 def bit_decoder(section, sample_rate):
-    # print(section)
-    # print(sample_rate)
+    """
+    Used to determine which frequency a bit aligns with.
+    """
 
     power_0 = tone_power(section, FREQ_0, sample_rate)
     power_1 = tone_power(section, FREQ_1, sample_rate)
@@ -35,9 +39,10 @@ def bit_decoder(section, sample_rate):
     return 1 if power_1 > power_0 else 0
 
 def byte_decoder(bits):
+    """
+    Used to parse 10 bits at a time based on a start bit, end bit, and the bits between which contain the data.
+    """
     
-    # print(bits)
-
     start_bit = bits[0]
     end_bit = bits[9]
     between_bits = bits[1:9]
@@ -57,9 +62,6 @@ def byte_decoder(bits):
 def main():
     sample_rate, samples = wavfile.read("message.wav")
 
-    # print(sample_rate)
-    # print(samples)
-
     samples = samples.astype(np.float32) / 32768.0
 
     num_bits = len(samples) // SAMPLES_PER_BIT
@@ -72,7 +74,6 @@ def main():
 
         bit = bit_decoder(section, sample_rate)
         bits.append(bit)
-        # print(bit)
 
     chars = []
 
