@@ -6,6 +6,9 @@ BAUD = 300
 
 SAMPLES_PER_BIT = SAMPLE_RATE // BAUD
 
+BITS_PER_BYTE = 10
+SAMPLES_PER_BYTE = SAMPLES_PER_BIT * BITS_PER_BYTE
+
 FREQ_0 = 2025
 FREQ_1 = 2225
 
@@ -23,19 +26,41 @@ def tone_power(section, freq, sample_rate):
     return cos_align * cos_align + sin_align * sin_align
 
 def bit_decoder(section, sample_rate):
-    print(section)
-    print(sample_rate)
+    # print(section)
+    # print(sample_rate)
 
     power_0 = tone_power(section, FREQ_0, sample_rate)
     power_1 = tone_power(section, FREQ_1, sample_rate)
 
     return 1 if power_1 > power_0 else 0
 
+def byte_decoder(bits):
+    
+    # print(bits)
+
+    start_bit = bits[0]
+    end_bit = bits[9]
+    between_bits = bits[1:9]
+
+    if start_bit != 0:
+        print("Bad start bit")
+
+    if end_bit != 1:
+        print("Bad end bit")
+
+    value = 0
+    for i, bit in enumerate(between_bits):
+        value += bit << i
+
+    return value
+
 def main():
     sample_rate, samples = wavfile.read("message.wav")
 
-    print(sample_rate)
-    print(samples)
+    # print(sample_rate)
+    # print(samples)
+
+    samples = samples.astype(np.float32) / 32768.0
 
     num_bits = len(samples) // SAMPLES_PER_BIT
     bits = []
@@ -46,7 +71,23 @@ def main():
         section = samples[start_bit:end_bit]
 
         bit = bit_decoder(section, sample_rate)
-        print(bit)
+        bits.append(bit)
+        # print(bit)
+
+    chars = []
+
+    for i in range(0, len(bits) - BITS_PER_BYTE + 1, BITS_PER_BYTE):
+        byte_bits = bits[i:i + BITS_PER_BYTE]
+        byte_value = byte_decoder(byte_bits)
+
+        chars.append(chr(byte_value))
+
+    message = "".join(chars)
+
+    print("Message:",message)
+
+    with open("message.txt", "w", encoding="utf-8") as f:
+        f.write(message)
 
 if __name__ == "__main__":
     main()
